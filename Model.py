@@ -23,16 +23,16 @@ class DQN(nn.Module):
 
         # (84, 84, 1) -> (40, 40, 16) -> (18, 18, 32) -> (7, 7, 64)
 
-        self.fc1 = nn.Linear(7*7*64, 32)
+        self.fc1 = nn.Linear(4*7*7*64, 32)
         self.fc2 = nn.Linear(32, output_dim)
 
     def forward(self, x):
         x = x.to(device)
-        x = F.elu(self.bn1(self.conv1(x)))
-        x = F.elu(self.bn2(self.conv2(x)))
-        x = F.elu(self.bn3(self.conv3(x)))
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
         # flattening the tensor for fc layers
-        x = x.view(-1, 7*7*64)
-        x = F.elu(self.fc1(x))
+        x = x.view(-1, 4*7*7*64)
+        x = F.relu(self.fc1(x))
         return self.fc2(x)
 
