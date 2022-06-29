@@ -9,6 +9,8 @@ Libraries used: PyTorch, Matplotlib, NumPy, Gym, tqdm
 
 make sure to do pip install gym[atari] to get access to the mspacman environment
 
+Image credits: https://files.softicons.com/download/game-icons/classic-games-icons-by-thvg/ico/Pacman.ico
+
 
 
 
