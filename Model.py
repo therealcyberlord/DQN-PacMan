@@ -2,18 +2,13 @@ import torch
 from torch import nn 
 import torch.nn.functional as F
 
-# check if there is a CUDA compatible GPU, otherwise use the CPU 
-device = torch.device("cpu")
-
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-
 # This will be the neural network that we are training on
 
 class DQN(nn.Module):
-    def __init__(self, output_dim):
+    def __init__(self, output_dim, device):
         super(DQN, self).__init__()
 
+        self.device = device
         self.conv1 = nn.Conv2d(1, 16, kernel_size=5, stride=2)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
@@ -27,7 +22,7 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(32, output_dim)
 
     def forward(self, x):
-        x = x.to(device)
+        x = x.to(self.device)
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
         x = F.relu(self.bn3(self.conv3(x)))
