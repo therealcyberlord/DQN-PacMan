@@ -13,7 +13,10 @@ class DynamicStepDriver:
         state = self.env.reset()
         
         for step in tqdm(range(num_steps)):
+            # random action
             action = self.env.action_space.sample()
+
+            # stepping into the environment 
             next_state, reward, done, info = self.env.step(action)
 
             if done:
@@ -21,7 +24,10 @@ class DynamicStepDriver:
                 state = self.env.reset()
 
             self.replay_buffer.push((state, action, next_state, reward))
-            state = next_state
+
+            # if next_state is not none, we would like to continue in the environment 
+            if next_state is not None:
+                state = next_state
     
         
 

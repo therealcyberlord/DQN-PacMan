@@ -1,5 +1,6 @@
 import torch
 import numpy as np 
+from Logging import Logger
 
 class Train_DQN:
     def __init__(self, env, height, width, batch_size, channel, device, replay_buffer, policy, target, gamma, optim, criterion):
@@ -15,7 +16,6 @@ class Train_DQN:
         self.gamma = gamma 
         self.optim = optim
         self.criterion = criterion
-        self.step_counter = 0
 
 
     def epsilon_greedy(self, state, epsilon):
@@ -40,16 +40,15 @@ class Train_DQN:
         
         # converting data from the batch to be compatible with pytorch, also normalize the image data
         
-        states = np.array([s[0] for s in batch]).astype("float32") / 255.0
+        states = np.array([experience[0] for experience in batch]).astype("float32") / 255.0
         states = torch.tensor(states, dtype=torch.float32, device=self.device).view(-1, 1, self.height, self.width)
+        actions = torch.tensor(np.array([experience[1] for experience in batch]), dtype=torch.int64, device = self.device)
+        rewards = torch.tensor(np.array([experience[3] for experience in batch]), dtype=torch.float32, device = self.device)
 
-        actions = torch.tensor(np.array([s[1] for s in batch]), dtype=torch.int64, device = self.device)
-        rewards = torch.tensor(np.array([s[3] for s in batch]), dtype=torch.float32, device = self.device)
-
-        non_final_next_states = np.array([s[2] for s in batch if s[2] is not None]).astype("float32") / 255.0
+        non_final_next_states = np.array([experience[2] for experience in batch if experience[2] is not None]).astype("float32") / 255.0
         non_final_next_states = torch.tensor(non_final_next_states, dtype=torch.float32, device = self.device).view(-1, 1, self.height, self.width)
 
-        non_final_mask = torch.tensor(np.array([s[2] is not None for s in batch]), dtype=torch.bool)
+        non_final_mask = torch.tensor(np.array([experience[2] is not None for experience in batch]), dtype=torch.bool)
 
         # computing the Q values 
 
@@ -80,6 +79,10 @@ class Train_DQN:
     
 
     def learn(self, num_episodes, max_episode_steps, min_samples_for_training, train_period, update_target_net_steps, end_epsilion_decay):
+        step_counter = 0
+        # initialize the logger
+        logger = Logger()
+
         for episode in range(num_episodes):
             state = self.env.reset()
 
@@ -95,7 +98,7 @@ class Train_DQN:
                 # incrementing onto the episode reward
                 episode_reward += reward
 
-                self.step_counter += 1
+                step_counter += 1
                 episode_steps += 1
 
                 # set the next state to None if the game is over
@@ -106,21 +109,20 @@ class Train_DQN:
                 # we add the experiences to the replay buffer
                 self.replay_buffer.push((state, action, next_state, reward))
 
-                # once the memory hits the minimum crtieria, we start training once every four steps
-                if len(self.replay_buffer) > min_samples_for_training:
-                    if step % train_period == 0:
-                        self.optimize_model()
+                # train the model every several steps 
+                if step_counter % train_period == 0:
+                    self.optimize_model()
 
-                    # update the target network
-                    if self.step_counter % update_target_net_steps == 0:
-                        print("Update target network")
-                        self.target.load_state_dict(self.policy.state_dict())
+                # update the target network
+                if step_counter % update_target_net_steps == 0:
+                    print("Update target network")
+                    self.target.load_state_dict(self.policy.state_dict())
 
                 # set current state to next state
                 state = next_state
                 
             # printing out episode stats
-            print(f"episode: {episode + 1} - episode reward: {episode_reward}  episode steps: {episode_steps}  total steps: {self.step_counter}\n") 
+            logger.print_stats(episode+1, episode_reward, episode_steps, step_counter) 
             
             
 

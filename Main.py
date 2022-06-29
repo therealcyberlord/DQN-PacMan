@@ -6,6 +6,7 @@ import torch
 from Replay import ReplayBuffer
 from Train import Train_DQN
 from Model import DQN
+from Driver import DynamicStepDriver
 
 
 # variables we need for setting up the agent 
@@ -52,6 +53,11 @@ criterion = HuberLoss().to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
+# collecting experiences using a random policy -> replay buffer
+driver = DynamicStepDriver(wrapped_env, memory)
+driver.collect(min_samples_for_training)
+
+print(len(memory))
 
 # create the agent which will learn to play the environment 
 Agent = Train_DQN(wrapped_env, height, width, batch_size, channel, device, memory, policy_net, target_net, gamma, optimizer, criterion)
