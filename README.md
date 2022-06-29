@@ -7,7 +7,7 @@ This project utilizes two DQN models: an online model and a target model. The on
 
 Libraries used: PyTorch, Matplotlib, NumPy, Gym, tqdm
 
-make sure to do pip install gym[atari] to get access to the mspacman environment
+* make sure to do pip install gym[atari] to get access to the mspacman environment
 
 Image credits: https://files.softicons.com/download/game-icons/classic-games-icons-by-thvg/ico/Pacman.ico
 
