@@ -64,7 +64,3 @@ Agent = Train_DQN(wrapped_env, height, width, batch_size, channel, device, memor
 Agent.learn(num_episodes, max_episode_steps, min_samples_for_training, train_period, update_target_net_steps, end_epsilion_decay)
 
 
-
-
-
-

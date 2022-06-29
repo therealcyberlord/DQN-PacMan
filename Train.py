@@ -57,7 +57,7 @@ class Train_DQN:
         q_values = self.policy(states)
         
         # Select the proper Q value for the corresponding action taken Q(s_t, a)
-        state_action_values = q_values.gather(1, actions.unsqueeze(1).cuda())
+        state_action_values = q_values.gather(1, actions.unsqueeze(1))
 
         # Compute the value function of the next states using the target network 
         with torch.no_grad():

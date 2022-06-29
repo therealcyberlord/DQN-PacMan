@@ -1,6 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
-# help us keep track of the results during training 
+# help us keep track of the progress during training
 
 class Logger:
     def __init__(self):
@@ -20,12 +20,14 @@ class Logger:
         print("--------------------")
         print("")
 
+    # record statistics after an episode
     def record(self, episode_num, episode_rewards, episode_steps, total_steps):
         self.episodes.append(episode_num)
         self.steps.append(episode_steps)
         self.rewards.append(episode_rewards)
         self.total_steps.append(total_steps)
 
+    # plot the reward over the episodes
     def plot(self):
         plt.figure(figsize=(8, 6))
         plt.title("Rewards over the episodes")
