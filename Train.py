@@ -41,6 +41,7 @@ class Train_DQN:
         # converting data from the batch to be compatible with pytorch, also normalize the image data
         
         states = np.array([experience[0] for experience in batch]).astype("float32") / 255.0
+        # shape (256, 1, 84, 84)
         states = torch.tensor(states, dtype=torch.float32, device=self.device).view(-1, 1, self.height, self.width)
         actions = torch.tensor(np.array([experience[1] for experience in batch]), dtype=torch.int64, device = self.device)
         rewards = torch.tensor(np.array([experience[3] for experience in batch]), dtype=torch.float32, device = self.device)
@@ -122,7 +123,10 @@ class Train_DQN:
                 state = next_state
                 
             # printing out episode stats
-            logger.print_stats(episode+1, episode_reward, episode_steps, step_counter) 
+            logger.record(episode+1, episode_reward, episode_steps, step_counter) 
+            logger.print_stats()
+        # plot the rewards function
+        logger.plot()
             
             
 

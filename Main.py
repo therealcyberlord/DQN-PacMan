@@ -61,7 +61,7 @@ print(len(memory))
 
 # create the agent which will learn to play the environment 
 Agent = Train_DQN(wrapped_env, height, width, batch_size, channel, device, memory, policy_net, target_net, gamma, optimizer, criterion)
-Agent.learn(max_episode_steps, max_episode_steps, min_samples_for_training, train_period, update_target_net_steps, end_epsilion_decay)
+Agent.learn(num_episodes, max_episode_steps, min_samples_for_training, train_period, update_target_net_steps, end_epsilion_decay)
 
 
 
