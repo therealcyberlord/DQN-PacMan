@@ -3,7 +3,7 @@ import numpy as np
 from Logging import Logger
 
 class Train_DQN:
-    def __init__(self, env, height, width, batch_size, channel, device, replay_buffer, policy, target, gamma, optim, criterion):
+    def __init__(self, env, height, width, batch_size, channel, device, replay_buffer, policy, target, gamma, optim, criterion, save_period):
         self.env = env 
         self.height = height
         self.width = width
@@ -16,6 +16,7 @@ class Train_DQN:
         self.gamma = gamma 
         self.optim = optim
         self.criterion = criterion
+        self.save_period = save_period 
 
 
     def epsilon_greedy(self, state, epsilon):
@@ -28,7 +29,7 @@ class Train_DQN:
                 self.policy.eval()
                 # normalize the state array then make it compatible for pytorch 
                 state = np.array(state, dtype=np.float32) / 255.0
-                state = torch.tensor(state, dtype=torch.float32).view(-1, self.channel, self.height, self.width)
+                state = torch.tensor(state, dtype=torch.float32).unsqueeze(1)
                 net_out = self.policy(state)
             # take action based on the highest Q value -> exploitation 
             return int(net_out.argmax())
@@ -42,12 +43,12 @@ class Train_DQN:
         
         states = np.array([experience[0] for experience in batch]).astype("float32") / 255.0
         # shape (256, 1, 84, 84)
-        states = torch.tensor(states, dtype=torch.float32, device=self.device).view(-1, 1, self.height, self.width)
+        states = torch.tensor(states, dtype=torch.float32, device=self.device).view(-1, self.height, self.width).unsqueeze(1)
         actions = torch.tensor(np.array([experience[1] for experience in batch]), dtype=torch.int64, device = self.device)
         rewards = torch.tensor(np.array([experience[3] for experience in batch]), dtype=torch.float32, device = self.device)
 
         non_final_next_states = np.array([experience[2] for experience in batch if experience[2] is not None]).astype("float32") / 255.0
-        non_final_next_states = torch.tensor(non_final_next_states, dtype=torch.float32, device = self.device).view(-1, 1, self.height, self.width)
+        non_final_next_states = torch.tensor(non_final_next_states, dtype=torch.float32, device = self.device).view(-1, self.height, self.width).unsqueeze(1)
 
         non_final_mask = torch.tensor(np.array([experience[2] is not None for experience in batch]), dtype=torch.bool)
 
@@ -82,9 +83,9 @@ class Train_DQN:
     def learn(self, num_episodes, max_episode_steps, min_samples_for_training, train_period, update_target_net_steps, end_epsilion_decay):
         step_counter = 0
         # initialize the logger
-        logger = Logger()
+        logger = Logger(num_episodes)
 
-        for episode in range(num_episodes):
+        for episode in range(1, num_episodes+1):
             state = self.env.reset()
 
             episode_reward = 0 
@@ -121,9 +122,21 @@ class Train_DQN:
 
                 # set current state to next state
                 state = next_state
+            
+            # save the model
+            if episode % self.save_period == 0: 
+                path = "Checkpoints/mspacmanNet-episode-{}.chkpt".format(episode)
+                torch.save({
+                'episode': episode,
+                'policy_state_dict': self.policy.state_dict(),
+                'target_state_dict': self.target.state_dict(),
+                'optimizer_state_dict': self.optim.state_dict(),
+                'loss': self.criterion,
+                'replay_buffer': self.replay_buffer,
+                }, path)
                 
             # printing out episode stats
-            logger.record(episode+1, episode_reward, episode_steps, step_counter) 
+            logger.record(episode, episode_reward, episode_steps, step_counter) 
             logger.print_stats()
         # plot the rewards function
         logger.plot()

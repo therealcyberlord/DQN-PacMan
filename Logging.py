@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 # help us keep track of the progress during training
 
 class Logger:
-    def __init__(self):
+    def __init__(self, num_episodes):
+        self.num_episodes = num_episodes 
         self.episodes = []
         self.steps = [] 
         self.rewards = []
@@ -13,7 +14,7 @@ class Logger:
         # this prints out the latest stats
         assert self.episodes is not None, "please record before printing"
 
-        print("Episode #:", self.episodes[-1])
+        print(f"Episode {self.episodes[-1]}/{self.num_episodes}")
         print("Rewards:", self.steps[-1])
         print("Steps:", self.rewards[-1])
         print("Total Steps:", self.total_steps[-1])
