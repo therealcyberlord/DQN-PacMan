@@ -15,8 +15,8 @@ class Logger:
         assert self.episodes is not None, "please record before printing"
 
         print(f"Episode {self.episodes[-1]}/{self.num_episodes}")
-        print("Rewards:", self.steps[-1])
-        print("Steps:", self.rewards[-1])
+        print("Rewards:", self.rewards[-1])
+        print("Steps:", self.steps[-1])
         print("Total Steps:", self.total_steps[-1])
         print("--------------------")
         print("")
