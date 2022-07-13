@@ -22,7 +22,7 @@ def main():
     parser.add_argument("-batch_size", help="batch size", default=batch_size, type=int)
     parser.add_argument("-gamma", help="discount rate", default=gamma, type=float)
     parser.add_argument("-end_epsilion_decay", help="when to stop decaying epsilon", default=end_epsilion_decay, type=float)
-    parser.add_argument("--update_target_steps", help="when to update the target network with the policy network", default=update_target_net_steps, type=int)
+    parser.add_argument("-update_target_steps", help="when to update the target network with the policy network", default=update_target_net_steps, type=int)
     parser.add_argument("-max_episode_steps", help="max steps in a given episode before termination", default=max_episode_steps, type=int)
     parser.add_argument("-save_checkpoint", help="save checkpoint every given episodes", default=save_checkpoint_period, type=int)
 
@@ -37,7 +37,6 @@ def main():
 
     # apply the standard atari preprocessing -> convert to grayscale, frameskip, resize to 84x84
     wrapped_env = AtariPreprocessing(env)
-    wrapped_env = FrameStack(wrapped_env, 4)
 
     # we'll be using two networks for training the Atari AI
     policy_net = DQN(num_actions).to(device)
@@ -58,7 +57,7 @@ def main():
 
     # create the agent which will learn to play the environment 
     Agent = Train_DQN(wrapped_env, args.batch_size, memory, policy_net, target_net, args.gamma, optimizer, criterion, args.save_checkpoint)
-    Agent.learn(args.episodes, args.max_episode_steps, args.update_target_net_steps, args.end_epsilion_decay)
+    Agent.learn(args.episodes, args.max_episode_steps, args.update_target_steps, args.end_epsilion_decay)
 
 
 if __name__ == "__main__":

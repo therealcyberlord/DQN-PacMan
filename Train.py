@@ -20,17 +20,19 @@ class Train_DQN:
     def epsilon_greedy(self, state, epsilon):
         assert epsilon <= 1 and epsilon >= 0, "Epsilon needs to be in the range of [0, 1]"
         # take random action -> exploration 
-        if np.random.random() <= epsilon:
+        rand = np.random.random()
+
+        if rand <= epsilon:
             return np.random.randint(0, num_actions-1)
         else:
             with torch.no_grad():
                 self.policy.eval()
                 # normalize the state array then make it compatible for pytorch 
                 state = np.array(state, dtype=np.float32) / 255.0
-                state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(1)
+                state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0).unsqueeze(0)
                 net_out = self.policy(state)
             # take action based on the highest Q value -> exploitation 
-            return int(net_out.argmax())
+            return torch.argmax(net_out, dim=1).item()
 
 
     def optimize_model(self):
@@ -40,7 +42,7 @@ class Train_DQN:
         # converting data from the batch to be compatible with pytorch, also normalize the image data
         
         states = np.array([experience[0] for experience in batch]).astype("float32") / 255.0
-        states = torch.tensor(states, dtype=torch.float32, device=self.device).unsqueeze(1)
+        states = torch.tensor(states, dtype=torch.float32, device=device).unsqueeze(1)
         actions = torch.tensor(np.array([experience[1] for experience in batch]), dtype=torch.int64, device=device)
         rewards = torch.tensor(np.array([experience[3] for experience in batch]), dtype=torch.float32, device=device)
 
@@ -75,6 +77,8 @@ class Train_DQN:
         self.optim.zero_grad()
         loss.backward()
         self.optim.step()
+
+        return loss 
     
 
     def learn(self, num_episodes, max_episode_steps, update_target_net_steps, end_epsilion_decay):
@@ -91,8 +95,12 @@ class Train_DQN:
             done = False
 
             for step in range(max_episode_steps):
+
+                # optimize the model 
+                loss = self.optimize_model()
+
                 # as you can see, epsilon is decreasing for each episode 
-                action = self.epsilon_greedy(state, )
+                action = self.epsilon_greedy(state, epsilon=max(0.999996**step_counter, end_epsilion_decay))
                 next_state, reward, done, info = self.env.step(action)
                 # incrementing onto the episode reward
                 episode_reward += reward
@@ -121,7 +129,7 @@ class Train_DQN:
                self.save_checkpoint(episode, step_counter)
                 
             # printing out episode stats
-            logger.record(episode, episode_reward, episode_steps, step_counter) 
+            logger.record(episode, episode_reward, loss, episode_steps, step_counter) 
             logger.print_stats()
         # plot the rewards function
         logger.plot()
