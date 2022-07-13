@@ -13,6 +13,7 @@ import argparse
 
 def main():
     # command line arguments for training 
+
     
     parser = argparse.ArgumentParser()
 

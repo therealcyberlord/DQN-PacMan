@@ -1,6 +1,6 @@
 import torch
 import gym 
-from gym.wrappers import AtariPreprocessing, RecordVideo
+from gym.wrappers import AtariPreprocessing
 from Model import DQN
 from Configs import device, max_episode_steps, num_actions
 import numpy as np 
@@ -13,31 +13,28 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-episodes", help="number of episodes to play", default=3, type=int)
     parser.add_argument("-checkpoint", help="which checkpoint to restore to", default=1200)
-    parser.add_argument("-record", help="whether to record the gameplay", action='store_true', default=False)
 
     args = parser.parse_args()
 
     checkpoint = torch.load(f"Checkpoints/mspacmanNet-episode-{args.checkpoint}.chkpt", map_location=device)
 
-    # delete render_mode = human if just we want to record, it is faster 
     env = gym.make("MsPacmanNoFrameskip-v4", render_mode="human")
 
     # apply the standard atari preprocessing -> convert to grayscale, frameskip, resize to 84x84
     wrapped_env = AtariPreprocessing(env)
-
-    # record the environment
-    if args.record:
-        wrapped_env = RecordVideo(wrapped_env, video_folder="Gameplay", name_prefix="mspacman-gameplay")
 
     net = DQN(num_actions).to(device)
 
     # load checkpoint data for the policy model
     net.load_state_dict(checkpoint["policy_state_dict"])
 
+    frames =  []
+
     for i in range(args.episodes):
         state = wrapped_env.reset()
         done = False 
         for step in range(max_episode_steps):
+            frames.append(wrapped_env.render(mode="rgb_array"))
             with torch.no_grad():
                 net.eval()
                 # normalize the state array then make it compatible for the trained dqn 
@@ -52,6 +49,15 @@ def main():
                 break
             # update the current state since we moved
             state = next_state
+
+
+    image_path = "mspacman.gif"
+    frame_images = [PIL.Image.fromarray(frame) for frame in frames]
+    frame_images[0].save(image_path, format='GIF',
+                        append_images=frame_images[1:],
+                        save_all=True,
+                        duration=30,
+                        loop=0)
 
     
 if __name__ == "__main__":

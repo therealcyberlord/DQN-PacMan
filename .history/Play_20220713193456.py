@@ -19,7 +19,6 @@ def main():
 
     checkpoint = torch.load(f"Checkpoints/mspacmanNet-episode-{args.checkpoint}.chkpt", map_location=device)
 
-    # delete render_mode = human if just we want to record, it is faster 
     env = gym.make("MsPacmanNoFrameskip-v4", render_mode="human")
 
     # apply the standard atari preprocessing -> convert to grayscale, frameskip, resize to 84x84

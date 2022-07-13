@@ -19,15 +19,11 @@ def main():
 
     checkpoint = torch.load(f"Checkpoints/mspacmanNet-episode-{args.checkpoint}.chkpt", map_location=device)
 
-    # delete render_mode = human if just we want to record, it is faster 
-    env = gym.make("MsPacmanNoFrameskip-v4", render_mode="human")
+    env = gym.make("MsPacmanNoFrameskip-v4")
 
     # apply the standard atari preprocessing -> convert to grayscale, frameskip, resize to 84x84
     wrapped_env = AtariPreprocessing(env)
-
-    # record the environment
-    if args.record:
-        wrapped_env = RecordVideo(wrapped_env, video_folder="Gameplay", name_prefix="mspacman-gameplay")
+    wrapped_env = RecordVideo(wrapped_env, video_folder="Gameplay", name_prefix="mspacman-gameplay")
 
     net = DQN(num_actions).to(device)
 
