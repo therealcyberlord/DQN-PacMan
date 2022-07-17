@@ -1,5 +1,5 @@
 import gym
-from gym.wrappers import AtariPreprocessing, FrameStack
+from gym.wrappers import AtariPreprocessing, FrameStack, RecordVideo
 from torch.optim import RMSprop
 from torch.nn import HuberLoss
 import torch
@@ -25,7 +25,6 @@ def main():
     parser.add_argument("-end_epsilion_decay", help="when to stop decaying epsilon", default=end_epsilion_decay, type=float)
     parser.add_argument("-update_target_steps", help="when to update the target network with the policy network", default=update_target_net_steps, type=int)
     parser.add_argument("-max_episode_steps", help="max steps in a given episode before termination", default=max_episode_steps, type=int)
-    parser.add_argument("-save_checkpoint", help="save checkpoint every given episodes", default=save_checkpoint_period, type=int)
 
 
     args = parser.parse_args()
@@ -38,6 +37,10 @@ def main():
 
     # apply the standard atari preprocessing -> convert to grayscale, frameskip, resize to 84x84
     wrapped_env = AtariPreprocessing(env)
+    # frame stack for extra information: e.g. ghost movements and states 
+    wrapped_env = FrameStack(wrapped_env, num_stack=4)
+    # recording the environment once every 100 episodes
+    wrapped_env = RecordVideo(wrapped_env, video_folder="Gameplay", episode_trigger = lambda x: x % 10 == 0, name_prefix = "pacman-training")
 
     # we'll be using two networks for training the Atari AI
     policy_net = DQN(num_actions).to(device)
@@ -57,7 +60,7 @@ def main():
     driver.collect(min_samples_for_training)
 
     # create the agent which will learn to play the environment 
-    Agent = Train_DQN(wrapped_env, args.batch_size, memory, policy_net, target_net, args.gamma, optimizer, criterion, args.save_checkpoint)
+    Agent = Train_DQN(wrapped_env, args.batch_size, memory, policy_net, target_net, args.gamma, optimizer, criterion)
     Agent.learn(args.episodes, args.max_episode_steps, args.update_target_steps, args.end_epsilion_decay)
 
 

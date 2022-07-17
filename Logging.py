@@ -50,11 +50,3 @@ class Logger:
         plt.xlabel("Episodes")
         plt.ylabel("Scores")
         plt.show()
-
-        # plot the huber loss over the episodes
-        plt.figure(figsize=(8, 6))
-        plt.title("Loss over the episodes")
-        plt.plot(self.huber_loss)
-        plt.xlabel("Episodes")
-        plt.ylabel("Huber Loss")
-        plt.show()

@@ -22,16 +22,11 @@ class DynamicStepDriver:
           
             # stepping into the environment 
             next_state, reward, done, info = self.env.step(action)
+            self.replay_buffer.push((state, action, next_state, reward))
+            state = next_state 
 
             if done:
-                next_state = None
                 state = self.env.reset()
-
-            self.replay_buffer.push((state, action, next_state, reward))
-
-            # if next_state is not none, we would like to continue in the environment 
-            if next_state is not None:
-                state = next_state
     
         
 

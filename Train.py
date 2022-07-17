@@ -1,10 +1,10 @@
 import torch
 import numpy as np 
 from Logging import Logger
-from Configs import device , num_actions
+from Configs import device , num_actions, height, width, channel
 
 class Train_DQN:
-    def __init__(self, env, batch_size, replay_buffer, policy, target, gamma, optim, criterion, save_period):
+    def __init__(self, env, batch_size, replay_buffer, policy, target, gamma, optim, criterion):
         # initializing variables necessary for training/saving the model 
         self.env = env 
         self.batch_size = batch_size
@@ -14,7 +14,6 @@ class Train_DQN:
         self.gamma = gamma 
         self.optim = optim
         self.criterion = criterion
-        self.save_period = save_period 
 
 
     def epsilon_greedy(self, state, epsilon):
@@ -26,10 +25,9 @@ class Train_DQN:
             return np.random.randint(0, num_actions-1)
         else:
             with torch.no_grad():
-                self.policy.eval()
                 # normalize the state array then make it compatible for pytorch 
                 state = np.array(state, dtype=np.float32) / 255.0
-                state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0).unsqueeze(0)
+                state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
                 net_out = self.policy(state)
             # take action based on the highest Q value -> exploitation 
             return torch.argmax(net_out, dim=1).item()
@@ -42,12 +40,12 @@ class Train_DQN:
         # converting data from the batch to be compatible with pytorch, also normalize the image data
         
         states = np.array([experience[0] for experience in batch]).astype("float32") / 255.0
-        states = torch.tensor(states, dtype=torch.float32, device=device).unsqueeze(1)
+        states = torch.tensor(states, dtype=torch.float32, device=device)
         actions = torch.tensor(np.array([experience[1] for experience in batch]), dtype=torch.int64, device=device)
         rewards = torch.tensor(np.array([experience[3] for experience in batch]), dtype=torch.float32, device=device)
 
         non_final_next_states = np.array([experience[2] for experience in batch if experience[2] is not None]).astype("float32") / 255.0
-        non_final_next_states = torch.tensor(non_final_next_states, dtype=torch.float32, device=device).unsqueeze(1)
+        non_final_next_states = torch.tensor(non_final_next_states, dtype=torch.float32, device=device)
 
         non_final_mask = torch.tensor(np.array([experience[2] is not None for experience in batch]), dtype=torch.bool)
 
@@ -84,7 +82,7 @@ class Train_DQN:
     def learn(self, num_episodes, max_episode_steps, update_target_net_steps, end_epsilion_decay):
         step_counter = 0
         # initialize the logger
-        logger = Logger(num_episodes)
+        logger = Logger(num_episodes, 10)
 
         for episode in range(1, num_episodes+1):
             state = self.env.reset()
@@ -96,7 +94,8 @@ class Train_DQN:
 
             for step in range(max_episode_steps):
 
-                # optimize the model 
+                # optimize the model every 4 steps 
+              
                 loss = self.optimize_model()
 
                 # as you can see, epsilon is decreasing for each episode 
@@ -110,7 +109,6 @@ class Train_DQN:
 
                 # set the next state to None if the game is over
                 if done:
-                    next_state = None 
                     break
 
                 # we add the experiences to the replay buffer
@@ -124,24 +122,24 @@ class Train_DQN:
                 # set current state to next state
                 state = next_state
             
-            # save the model
-            if episode % self.save_period == 0: 
-               self.save_checkpoint(episode, step_counter)
                 
             # printing out episode stats
-            logger.record(episode, episode_reward, loss, episode_steps, step_counter) 
+            logger.record(episode, episode_reward, episode_steps, step_counter) 
+            update_best_average = logger.new_best_average()
             logger.print_stats()
-        # plot the rewards function
+
+             # save the model
+            if update_best_average: 
+               self.save_checkpoint(episode, logger.best_average)
+
+        # plot the average rewards function
         logger.plot()
     
-    def save_checkpoint(self, episode, step_counter):
-         path = f"Checkpoints/mspacmanNet-episode-{episode}.chkpt"
-         torch.save({
-            'episode': episode,
-            'total_steps': step_counter,
-            'policy_state_dict': self.policy.state_dict(),
-            'target_state_dict': self.target.state_dict(),
-            'optimizer_state_dict': self.optim.state_dict(),
-            }, path)
+    def save_checkpoint(self, episode, avg_score):
+         path = f"Checkpoints/mspacmanNet-episode-{episode}-bestavg-{int(avg_score)}.pt"
+      
+         # save using torchscript, so we don't have to redefine the model class
+         model_scripted = torch.jit.script(self.policy)
+         model_scripted.save(path)
             
 
