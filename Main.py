@@ -2,13 +2,13 @@ import gym
 from gym.wrappers import AtariPreprocessing, FrameStack, RecordVideo
 from torch.optim import RMSprop
 from torch.nn import HuberLoss
-import torch
 from Replay import ReplayBuffer
 from Train import Train_DQN
 from Model import DQN
 from Configs import *
 from Driver import DynamicStepDriver
 import argparse 
+import os
 
 
 def main():
@@ -39,8 +39,6 @@ def main():
     wrapped_env = AtariPreprocessing(env)
     # frame stack for extra information: e.g. ghost movements and states 
     wrapped_env = FrameStack(wrapped_env, num_stack=4)
-    # recording the environment once every 100 episodes
-    wrapped_env = RecordVideo(wrapped_env, video_folder="Gameplay", episode_trigger = lambda x: x % 10 == 0, name_prefix = "pacman-training")
 
     # we'll be using two networks for training the Atari AI
     policy_net = DQN(num_actions).to(device)
@@ -58,6 +56,9 @@ def main():
     # collecting experiences using a random policy -> replay buffer
     driver = DynamicStepDriver(wrapped_env, memory)
     driver.collect(min_samples_for_training)
+
+    # recording the environment once every 100 episodes
+    wrapped_env = RecordVideo(wrapped_env, video_folder="Gameplay", episode_trigger = lambda x: x % 100 == 0, name_prefix = "training")
 
     # create the agent which will learn to play the environment 
     Agent = Train_DQN(wrapped_env, args.batch_size, memory, policy_net, target_net, args.gamma, optimizer, criterion)
